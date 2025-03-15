@@ -157,10 +157,10 @@ class Airport:
     def list_flights(self):
 
         print(f"Airport Id:  , {self.airport_id} \n"
-                f"Name:  , {self.name}\n"
-                f"Location:  , {self.location} \n"
-                f"Avilable flights:  , {self.avilable_flights} \n"
-                f"")
+              f"Name:  , {self.name}\n"
+              f"Location:  , {self.location} \n"
+              f"Avilable flights:  , {self.avilable_flights} \n"
+              f"")
 
     def get_airport_info(self):
 
