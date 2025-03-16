@@ -227,6 +227,64 @@ class Payment:
                   f"Payment Method: {self.payment_method} \n"
                   f"Status: {self.status}"
                   f"")  
+
+class Baggage:
+    def _init_(self, baggage_id, passenger, weight, baggage_fee, status="Checked In"):
+        self.baggage_id = baggage_id
+        self.passenger = passenger
+        self.weight = weight
+        self.baggage_fee = baggage_fee
+        self.status = status
+
+    def check_baggage_weight(self, max_weight=23):
+    
+        if self.weight > max_weight:
+            print(f"Baggage {self.baggage_id} exceeds the limit! Extra charges may apply.")
+            return False
+        print(f"Baggage {self.baggage_id} is within the weight limit.")
+        return True
+
+    def calculate_fee(self, extra_fee_per_kg=10, max_weight=23):
+        """Calculate extra baggage fee if the weight exceeds the limit."""
+        if self.weight > max_weight:
+            extra_weight = self.weight - max_weight
+            self.baggage_fee += extra_weight * extra_fee_per_kg
+        return self.baggage_fee
+
+    def update_baggage_status(self, new_status):
+        """Update baggage status (Checked In, Loaded, In Transit, Delivered)."""
+        self.status = new_status
+        print(f"Baggage {self.baggage_id} status updated to {self.status}")
+
+
+class Seat:
+    def _init_(self, seat_id, flight, seat_number, class_type, is_available=True):
+        self.seat_id = seat_id
+        self.flight = flight
+        self.seat_number = seat_number
+        self.class_type = class_type
+        self.is_available = is_available
+
+    def reserve_seat(self):
+        """Reserve the seat if it is available."""
+        if self.is_available:
+            self.is_available = False
+            print(f"Seat {self.seat_number} on flight {self.flight} has been reserved.")
+        else:
+            print(f"Seat {self.seat_number} is already taken!")
+
+    def release_seat(self):
+        """Release the seat, making it available for booking."""
+        if not self.is_available:
+            self.is_available = True
+            print(f"Seat {self.seat_number} on flight {self.flight} is now available.")
+        else:
+            print(f"Seat {self.seat_number} is already available!")
+
+
+
+seat1.reserve_seat()
+seat1.release_seat()
 class CrewMember(User):
     def __init__(self, crew_id, name, role, assigned_flights=None):
         self.crew_id = crew_id
