@@ -226,11 +226,11 @@ class Payment:
                   f"Status: {self.status}"
                   f"")  
 class CrewMember(User):
-    def __init__(self, crew_id, name, role, assigned_flights):
+    def __init__(self, crew_id, name, role, assigned_flights=None):
         self.crew_id = crew_id
         self.name = name
         self.role = role
-        self.assigned_flights = assigned_flights
+        self.assigned_flights = assigned_flights if assigned_flights is not None else []
 
     def assign_flight(self, flight):
         self.assigned_flights.append(flight)
@@ -251,7 +251,7 @@ class LoyaltyProgram:
         self.points += amount
 
     def redeem_points(self, points):
-        if points <= self.points:
+        if self.points >= points:
             self.points -= points
             return True
         return False
