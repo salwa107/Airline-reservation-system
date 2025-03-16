@@ -225,7 +225,7 @@ class Payment:
                   f"Payment Method: {self.payment_method} \n"
                   f"Status: {self.status}"
                   f"")  
-class CrewMember:
+class CrewMember(User):
     def __init__(self, crew_id, name, role, assigned_flights):
         self.crew_id = crew_id
         self.name = name
