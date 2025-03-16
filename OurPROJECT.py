@@ -235,7 +235,7 @@ class Baggage:
         self.status = status
 
     def check_baggage_weight(self, max_weight=23):
-        """Check if the baggage exceeds the allowed weight limit."""
+    
         if self.weight > max_weight:
             print(f"Baggage {self.baggage_id} exceeds the limit! Extra charges may apply.")
             return False
