@@ -47,6 +47,8 @@ class Passenger(User):
     def check_in(self):
         print("Checked in successfully.")
 
+passenger1 = Passenger("mohamed" , "mohamed@gmail.com" , "p2o4h" , "12345" , "9876" , 18 , "male" , "1-4-5-7" , "active")        
+
 
 class Administrator(User):
     def __init__(self, username, email, password, contact_number, admin_id, role):
