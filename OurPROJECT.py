@@ -278,9 +278,6 @@ class Seat:
             print(f"Seat {self.seat_number} on flight {self.flight} is now available.")
         else:
             print(f"Seat {self.seat_number} is already available!")
-
-
-
 seat1.reserve_seat()
 seat1.release_seat()
 class CrewMember(User):
