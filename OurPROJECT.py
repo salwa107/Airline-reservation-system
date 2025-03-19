@@ -1,20 +1,32 @@
 class User:
-    def __init__(self, username, email, password, contact_number):
+    def _init_(self, username, email, password, contact_number):
         self.username = username
         self.email = email
         self.password = password
         self.contact_number = contact_number
 
-    def login(self):
-        print("User logged in.")
+    def login(self, username, password):
+        if self.username == username and self.password == password:
+            print("Login successful. Access granted.")
+            return True
+        else:
+            print("Invalid username or password.")
+            return False
 
     def logout(self):
         print("User logged out.")
 
 
+class Check:
+    def verify(self, value1, value2=None):
+        if value2 is None:
+            return bool(value1)
+        return value1 == value2
+
+
 class Passenger(User):
-    def __init__(self, username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status):
-        super().__init__(username, email, password, contact_number)
+    def _init_(self, username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status):
+        super()._init_(username, email, password, contact_number)
         self.passenger_id = passenger_id
         self.age = age
         self.gender = gender
@@ -47,12 +59,10 @@ class Passenger(User):
     def check_in(self):
         print("Checked in successfully.")
 
-passenger1 = Passenger("mohamed" , "mohamed@gmail.com" , "p2o4h" , "12345" , "9876" , 18 , "male" , "1-4-5-7" , "active")        
-
 
 class Administrator(User):
-    def __init__(self, username, email, password, contact_number, admin_id, role):
-        super().__init__(username, email, password, contact_number)
+    def _init_(self, username, email, password, contact_number, admin_id, role):
+        super()._init_(username, email, password, contact_number)
         self.admin_id = admin_id
         self.role = role
 
@@ -281,10 +291,10 @@ class Seat:
         else:
             print(f"Seat {self.seat_number} is already available!")
 
+# seat1 = Seat(None,None,None,None,None)
 
-
-seat1.reserve_seat()
-seat1.release_seat()
+# seat1.reserve_seat()
+# seat1.release_seat()
 class CrewMember(User):
     def __init__(self, crew_id, name, role, assigned_flights=None):
         self.crew_id = crew_id
@@ -315,3 +325,38 @@ class LoyaltyProgram:
             self.points -= points
             return True
         return False
+
+
+if __name__ =="__main__":
+     passenger = Passenger("john_doe", "john@example.com", "secure123", "123-456-7890", "P001", 30, "Male", "A12345678", "Gold")
+     admin = Administrator("admin_user", "admin@example.com", "adminpass", "098-765-4321", "A001", "Flight Manager")
+     username=input("enter the username")
+     check = Check(username,passenger.username)
+     password=input("enter your password")
+     check = Check(password,passenger.password)
+
+    
+
+     if check.verify(passenger.username, username) and check.verify(passenger.password, password):
+        while True:
+            print("\nOptions:")
+            print("1. Book a flight")
+            print("2. View booking details")
+            print("3. Cancel booking")
+            print("4. Logout")
+            choice = input("Choose an option: ")
+
+            if choice == '1':
+                flight = {"booking_id": "B001", "flight_number": "XY123", "destination": "New York"}
+                passenger.book_flight(flight)
+            elif choice == '2':
+                booking_id = input("Enter booking ID: ")
+                print(passenger.view_booking_details(booking_id))
+            elif choice == '3':
+                booking_id = input("Enter booking ID: ")
+                passenger.cancel_booking(booking_id)
+            elif choice == '4':
+                passenger.logout()
+                break
+            else:
+                print("Invalid choice. Please try again.")
