@@ -1,3 +1,4 @@
+from abc import ABC , abstractmethod
 class User:
     def __init__(self, username, email, password, contact_number):
         self.username = username
@@ -17,7 +18,8 @@ class User:
         print("User logged out.")
 
 
-class Check:
+class Check(ABC):
+    
     def verify(self, value1, value2=None):
         if value2 is None:
             return bool(value1)

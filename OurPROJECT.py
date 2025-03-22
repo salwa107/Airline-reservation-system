@@ -1,9 +1,9 @@
 class User:
     def _init_(self, username, email, password, contact_number):
-        self.username = username
-        self.email = email
-        self.password = password
-        self.contact_number = contact_number
+        self.__username = username
+        self.__email = email
+        self.__password = password
+        self.__contact_number = contact_number
 
     def login(self, username, password):
         if self.username == username and self.password == password:
@@ -291,14 +291,11 @@ class Seat:
         else:
             print(f"Seat {self.seat_number} is already available!")
 #<<<<<<< HEAD
+seat1 = Seat(None,None,None,None,None) #temporarly no attributes
 seat1.reserve_seat()
 seat1.release_seat()
 #=======
 
-# seat1 = Seat(None,None,None,None,None)
-
-# seat1.reserve_seat()
-# seat1.release_seat()
 #>>>>>>> Ismail
 class CrewMember(User):
     def __init__(self, crew_id, name, role, assigned_flights=None):
