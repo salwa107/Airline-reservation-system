@@ -1,32 +1,37 @@
+import sqlite3
+from database import cursor, connection
+
+def create_database():
+    conn = sqlite3.connect('project_data.db')
+    cursor = conn.cursor()
+
 class User:
-    def _init_(self, username, email, password, contact_number):
-        self.__username = username
+    def __init__(self, username, email, password, contact_number):
+        self.__username = username 
         self.__email = email
         self.__password = password
         self.__contact_number = contact_number
 
-    def login(self, username, password):
-        if self.username == username and self.password == password:
-            print("Login successful. Access granted.")
-            return True
-        else:
-            print("Invalid username or password.")
-            return False
+    #  getter methods 
+    @property
+    def username(self):
+        return self.__username
 
-    def logout(self):
-        print("User logged out.")
+    @property
+    def email(self):
+        return self.__email
 
+    @property
+    def password(self):
+        return self.__password
 
-class Check:
-    def verify(self, value1, value2=None):
-        if value2 is None:
-            return bool(value1)
-        return value1 == value2
-
+    @property
+    def contact_number(self):
+        return self.__contact_number
 
 class Passenger(User):
-    def _init_(self, username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status):
-        super()._init_(username, email, password, contact_number)
+    def __init__(self, username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status):
+        super().__init__(username, email, password, contact_number)
         self.passenger_id = passenger_id
         self.age = age
         self.gender = gender
@@ -35,6 +40,36 @@ class Passenger(User):
         self.booking_history = []
         self.loyalty_points = 0
 
+    # Method to sign up the user (insert them into the database)
+    def sign_up(self, cursor):
+        # First, check if the user already exists in the database
+        cursor.execute("SELECT * FROM Passenger WHERE user_name = ?", (self.username,))
+        user = cursor.fetchone()  # Fetching user data, if any
+
+        if user:
+            # If user is found, print a message
+            print(f"User {self.username} is already registered.")
+        else:
+            # If user is not found, insert new data
+            cursor.execute("""
+            INSERT INTO Passenger (user_name, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (self.username, self.email, self.password, self.contact_number, self.passenger_id, self.age, self.gender, self.passport_number, self.frequent_flyer_status))
+            print(f"Passenger {self.username} signed up successfully!")
+
+    # Method to sign in the user (verify username and password)
+    def sign_in(self, cursor):
+        # Checking if the user exists and the password is correct
+        cursor.execute("SELECT * FROM Passenger WHERE user_name = ? AND password = ?", (self.username, self.password))
+        user = cursor.fetchone()
+
+        if user:
+            print(f"Welcome back, {self.username}!")
+            return True  # Successful login
+        else:
+            print("Invalid username or password. Please try again.")
+            return False  # Failed login
+        
     def book_flight(self, flight):
         self.booking_history.append(flight)
         print(f"Flight {flight} booked successfully.")
@@ -58,6 +93,10 @@ class Passenger(User):
 
     def check_in(self):
         print("Checked in successfully.")
+
+
+
+
 
 
 class Administrator(User):
@@ -291,25 +330,25 @@ class Seat:
         else:
             print(f"Seat {self.seat_number} is already available!")
 #<<<<<<< HEAD
-seat1 = Seat(None,None,None,None,None) #temporarly no attributes
-seat1.reserve_seat()
-seat1.release_seat()
+# seat1 = Seat(None,None,None,None,None) #temporarly no attributes
+# seat1.reserve_seat()
+# seat1.release_seat()
 #=======
 
 #>>>>>>> Ismail
-class CrewMember(User):
-    def __init__(self, crew_id, name, role, assigned_flights=None):
-        self.crew_id = crew_id
-        self.name = name
-        self.role = role
-        self.assigned_flights = assigned_flights if assigned_flights is not None else []
+# class CrewMember(User):
+#     def __init__(self, crew_id, name, role, assigned_flights=None):
+#         self.crew_id = crew_id
+#         self.name = name
+#         self.role = role
+#         self.assigned_flights = assigned_flights if assigned_flights is not None else []
 
-    def assign_flight(self, flight):
-        self.assigned_flights.append(flight)
+#     def assign_flight(self, flight):
+#         self.assigned_flights.append(flight)
 
-    def remove_from_flight(self, flight):
-        if flight in self.assigned_flights:
-            self.assigned_flights.remove(flight)
+#     def remove_from_flight(self, flight):
+#         if flight in self.assigned_flights:
+#             self.assigned_flights.remove(flight)
 
 
 class LoyaltyProgram:
@@ -329,36 +368,59 @@ class LoyaltyProgram:
         return False
 
 
-if __name__ =="__main__":
-     passenger = Passenger("john_doe", "john@example.com", "secure123", "123-456-7890", "P001", 30, "Male", "A12345678", "Gold")
-     admin = Administrator("admin_user", "admin@example.com", "adminpass", "098-765-4321", "A001", "Flight Manager")
-     username=input("enter the username")
-     check = Check(username,passenger.username)
-     password=input("enter your password")
-     check = Check(password,passenger.password)
+
+
 
     
 
-     if check.verify(passenger.username, username) and check.verify(passenger.password, password):
-        while True:
-            print("\nOptions:")
-            print("1. Book a flight")
-            print("2. View booking details")
-            print("3. Cancel booking")
-            print("4. Logout")
-            choice = input("Choose an option: ")
 
-            if choice == '1':
-                flight = {"booking_id": "B001", "flight_number": "XY123", "destination": "New York"}
-                passenger.book_flight(flight)
-            elif choice == '2':
-                booking_id = input("Enter booking ID: ")
-                print(passenger.view_booking_details(booking_id))
-            elif choice == '3':
-                booking_id = input("Enter booking ID: ")
-                passenger.cancel_booking(booking_id)
-            elif choice == '4':
-                passenger.logout()
-                break
-            else:
-                print("Invalid choice. Please try again.")
+
+def main():
+    # Connect to the SQLite database
+    connection = sqlite3.connect('project_data.db')
+    cursor = connection.cursor()
+
+    # Ask the user if they want to sign up or sign in
+    choice = input("Do you want to Sign Up or Sign In? (Enter 'Sign Up' or 'Sign In'): ").strip().lower()
+
+    if choice == "sign up":
+        # **SIGN UP**: User inputs their details
+        print("Welcome to the registration process!")
+        username = input("Enter your username: ")
+        email = input("Enter your email: ")
+        password = input("Enter your password: ")
+        contact_number = input("Enter your contact number: ")
+        passenger_id = input("Enter your passenger ID: ")
+        age = int(input("Enter your age: "))
+        gender = input("Enter your gender (e.g., Male/Female): ")
+        passport_number = input("Enter your passport number: ")
+        frequent_flyer_status = input("Enter your frequent flyer status (e.g., Silver/Gold): ")
+
+        new_passenger = Passenger(username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
+        new_passenger.sign_up(cursor)
+
+        # Commit the transaction to save changes to the database
+        connection.commit()
+
+    elif choice == "sign in":
+        # **SIGN IN**: User enters username and password to log in
+        print("\n--- Sign In ---")
+        sign_in_username = input("Enter your username: ")
+        sign_in_password = input("Enter your password: ")
+
+        passenger_to_sign_in = Passenger(sign_in_username, "", sign_in_password, "", 0, 0, "", "", "")
+        if passenger_to_sign_in.sign_in(cursor):
+            # If sign in is successful, you can proceed with other actions
+            print("Proceeding to the dashboard...")
+        else:
+            print("Failed to sign in.")
+
+    else:
+        print("Invalid choice. Please enter 'Sign Up' or 'Sign In'.")
+
+    # Close the database connection
+    connection.close()
+
+# Run the main function
+if __name__ == "__main__":
+    main()
