@@ -40,35 +40,47 @@ class Passenger(User):
         self.booking_history = []
         self.loyalty_points = 0
 
-    # Method to sign up the user (insert them into the database)
-    def sign_up(self, cursor):
-        # First, check if the user already exists in the database
+       # Method to sign up the user (insert them into the database)
+def sign_up(self, cursor):
+    try:
         cursor.execute("SELECT * FROM Passenger WHERE user_name = ?", (self.username,))
-        user = cursor.fetchone()  # Fetching user data, if any
+        user = cursor.fetchone()
 
         if user:
-            # If user is found, print a message
             print(f"User {self.username} is already registered.")
         else:
-            # If user is not found, insert new data
             cursor.execute("""
-            INSERT INTO Passenger (user_name, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO Passenger (user_name, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (self.username, self.email, self.password, self.contact_number, self.passenger_id, self.age, self.gender, self.passport_number, self.frequent_flyer_status))
+            
+            cursor.connection.commit()
             print(f"Passenger {self.username} signed up successfully!")
+    
+    except sqlite3.Error as e:
+        print(f"An error occurred during sign-up: {e}")
+    except Exception as e:
+        print(f"Unexpected error during sign-up: {e}")
 
-    # Method to sign in the user (verify username and password)
-    def sign_in(self, cursor):
-        # Checking if the user exists and the password is correct
+
+def sign_in(self, cursor):
+    try:
         cursor.execute("SELECT * FROM Passenger WHERE user_name = ? AND password = ?", (self.username, self.password))
         user = cursor.fetchone()
 
         if user:
             print(f"Welcome back, {self.username}!")
-            return True  # Successful login
+            return True
         else:
             print("Invalid username or password. Please try again.")
-            return False  # Failed login
+            return False
+
+    except sqlite3.Error as e:
+        print(f"An error occurred during sign-in: {e}")
+        return False
+    except Exception as e:
+        print(f"Unexpected error during sign-in: {e}")
+        return False
         
     def book_flight(self, flight):
         self.booking_history.append(flight)
