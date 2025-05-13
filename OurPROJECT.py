@@ -1,4 +1,3 @@
-import bcrypt
 import re
 import sqlite3
 from abc import ABC, abstractmethod
@@ -6,111 +5,70 @@ from database import initialize_database, get_connection
 
 
 class User(ABC):
-    """
-    Abstract base class for all user types
-    Implements common user properties and authentication methods
-    """
-    
     def __init__(self, username, email, password, contact_number):
-        """
-        Initialize common user attributes
-        Args:
-            username: Unique identifier for the user
-            email: User's email address
-            password: User's password (will be hashed)
-            contact_number: User's phone number
-        """
         self.__username = username 
         self.__email = email
         self.__password = password
         self.__contact_number = contact_number
 
-    # ========== PROPERTIES ==========
     @property
     def username(self):
-        """Get the username"""
         return self.__username
 
     @property
     def email(self):
-        """Get the email"""
         return self.__email
 
     @property
     def password(self):
-        """Get the password (Note: returns plain text, used only during auth)"""
         return self.__password
 
     @property
     def contact_number(self):
-        """Get the contact number"""
         return self.__contact_number
 
-    # ========== SHARED CLASS METHODS ==========
     @classmethod
     def _validate_email(cls, email):
-        """Validate email format using regex"""
         return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
     @classmethod
     def _validate_password(cls, password):
-        """Validate password meets minimum requirements"""
-        return len(password) >= 8  # Minimum 8 characters
+        return len(password) >= 8
 
-    @classmethod
-    def _hash_password(cls, password):
-        """Hash password using bcrypt"""
-        return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-
-    # ========== ABSTRACT METHODS ==========
     @abstractmethod
     def sign_up(self, cursor, connection):
-        """Abstract method - must be implemented by child classes"""
         pass
 
     @abstractmethod
     def sign_in(self, cursor):
-        """Abstract method - must be implemented by child classes"""
         pass
 
     @abstractmethod
     def get_table_name(self):
-        """Abstract method - returns the database table name for the user type"""
         pass
 
     @abstractmethod
     def get_extra_fields(self):
-        """Abstract method - returns user-type specific fields for database"""
         pass
 
+
 class Passenger(User):
-    """
-    Passenger user type with booking capabilities
-    Inherits from User base class
-    """
-    
     def __init__(self, username, email, password, contact_number, 
                  passenger_id=None, age=None, gender=None, 
                  passport_number=None, frequent_flyer_status=None):
-        """
-        Initialize Passenger with common user attributes plus passenger-specific fields
-        """
         super().__init__(username, email, password, contact_number)
         self.passenger_id = passenger_id
         self.age = age
         self.gender = gender
         self.passport_number = passport_number
         self.frequent_flyer_status = frequent_flyer_status
-        self.booking_history = []  # Tracks passenger's bookings
-        self.loyalty_points = 0    # Tracks loyalty rewards
+        self.booking_history = []
+        self.loyalty_points = 0
 
-    # ========== REQUIRED ABSTRACT METHODS ==========
     def get_table_name(self):
-        """Returns the database table name for Passengers"""
         return "Passenger"
 
     def get_extra_fields(self):
-        """Returns passenger-specific fields for database storage"""
         return {
             'passenger_id': self.passenger_id,
             'age': self.age,
@@ -120,12 +78,6 @@ class Passenger(User):
         }
 
     def sign_up(self, cursor, connection):
-        """
-        Register a new passenger in the database
-        Returns:
-            bool: True if registration succeeded, False otherwise
-        """
-        # Validate inputs first
         if not self._validate_email(self.email):
             print("Invalid email format!")
             return False
@@ -134,23 +86,19 @@ class Passenger(User):
             return False
 
         try:
-            # Check if username already exists
             cursor.execute(f"SELECT * FROM {self.get_table_name()} WHERE user_name = ?", 
                          (self.username,))
             if cursor.fetchone():
                 print(f"User {self.username} already exists!")
                 return False
             
-            # Hash password before storing
-            password_hash = self._hash_password(self.password)
             fields = self.get_extra_fields()
             
-            # Insert new passenger record
             cursor.execute(f"""
                 INSERT INTO {self.get_table_name()} 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    self.username, self.email, password_hash, self.contact_number,
+                    self.username, self.email, self.password, self.contact_number,
                     fields['passenger_id'], fields['age'], fields['gender'], 
                     fields['passport_number'], fields['frequent_flyer_status']
                 ))
@@ -164,21 +112,14 @@ class Passenger(User):
             return False
 
     def sign_in(self, cursor):
-        """
-        Authenticate an existing passenger
-        Returns:
-            bool: True if authentication succeeded, False otherwise
-        """
         try:
-            # Retrieve hashed password from database
             cursor.execute(f"""
-                SELECT password_hash FROM {self.get_table_name()} 
+                SELECT password FROM {self.get_table_name()} 
                 WHERE user_name = ?
                 """, (self.username,))
             result = cursor.fetchone()
             
-            # Verify password against stored hash
-            if result and bcrypt.checkpw(self.password.encode(), result[0]):
+            if result and self.password == result[0]:
                 print(f"Welcome back, {self.username}!")
                 return True
             else:
@@ -189,14 +130,11 @@ class Passenger(User):
             print(f"Database error: {e}")
             return False
 
-    # ========== PASSENGER-SPECIFIC METHODS ==========
     def book_flight(self, flight):
-        """Book a flight and add to booking history"""
         self.booking_history.append(flight)
         print(f"Flight {flight} booked successfully.")
 
     def cancel_booking(self, booking_id):
-        """Cancel a booking by ID"""
         for booking in self.booking_history:
             if booking['booking_id'] == booking_id:
                 self.booking_history.remove(booking)
@@ -217,73 +155,23 @@ class Passenger(User):
         print("Checked in successfully.")
 
 
-
-
-
-
 class Administrator(User):
-    """
-    Administrator user type with management capabilities
-    Inherits from User base class
-    
-    Attributes:
-        admin_id (str): Unique identifier for the administrator
-        role (str): Administrator's role (e.g., 'Supervisor', 'Manager')
-    """
-    
     def __init__(self, username, email, password, contact_number, 
                  admin_id=None, role=None):
-        """
-        Initialize Administrator with common user attributes plus admin-specific fields
-        
-        Args:
-            username: Unique identifier for the admin
-            email: Admin's email address
-            password: Admin's password (will be hashed)
-            contact_number: Admin's phone number
-            admin_id: Unique admin identifier
-            role: Admin's role in the system
-        """
         super().__init__(username, email, password, contact_number)
         self.admin_id = admin_id
         self.role = role
 
-    # ========== REQUIRED ABSTRACT METHODS ==========
     def get_table_name(self):
-        """
-        Get the database table name for this user type
-        
-        Returns:
-            str: Name of the database table ('Administrator')
-        """
         return "Administrator"
 
     def get_extra_fields(self):
-        """
-        Get administrator-specific fields for database storage
-        
-        Returns:
-            dict: Dictionary containing admin_id and role
-        """
         return {
             'admin_id': self.admin_id,
             'role': self.role
         }
 
     def sign_up(self, cursor, connection):
-        """
-        Register a new administrator in the database
-        
-        Steps:
-        1. Validate email and password
-        2. Check if username already exists
-        3. Hash password
-        4. Insert record into database
-        
-        Returns:
-            bool: True if registration succeeded, False otherwise
-        """
-        # Validate inputs first
         if not self._validate_email(self.email):
             print("Invalid email format!")
             return False
@@ -292,23 +180,19 @@ class Administrator(User):
             return False
 
         try:
-            # Check if username already exists
             cursor.execute(f"SELECT * FROM {self.get_table_name()} WHERE user_name = ?", 
                          (self.username,))
             if cursor.fetchone():
                 print(f"Administrator {self.username} already exists!")
                 return False
             
-            # Hash password before storing
-            password_hash = self._hash_password(self.password)
             fields = self.get_extra_fields()
             
-            # Insert new admin record
             cursor.execute(f"""
                 INSERT INTO {self.get_table_name()} 
                 VALUES (?, ?, ?, ?, ?, ?)
                 """, (
-                    self.username, self.email, password_hash, self.contact_number,
+                    self.username, self.email, self.password, self.contact_number,
                     fields['admin_id'], fields['role']
                 ))
             connection.commit()
@@ -321,26 +205,14 @@ class Administrator(User):
             return False
 
     def sign_in(self, cursor):
-        """
-        Authenticate an existing administrator
-        
-        Steps:
-        1. Retrieve hashed password from database
-        2. Compare with provided password
-        
-        Returns:
-            bool: True if authentication succeeded, False otherwise
-        """
         try:
-            # Retrieve hashed password from database
             cursor.execute(f"""
-                SELECT password_hash FROM {self.get_table_name()} 
+                SELECT password FROM {self.get_table_name()} 
                 WHERE user_name = ?
                 """, (self.username,))
             result = cursor.fetchone()
             
-            # Verify password against stored hash
-            if result and bcrypt.checkpw(self.password.encode(), result[0]):
+            if result and self.password == result[0]:
                 print(f"Welcome back Administrator {self.username}!")
                 return True
             else:
@@ -351,75 +223,26 @@ class Administrator(User):
             print(f"Database error: {e}")
             return False
 
-    # ========== ADMIN-SPECIFIC METHODS ==========
     def add_flight(self, flight):
-        """
-        Add a new flight to the system
-        
-        Args:
-            flight: Flight object to be added
-            
-        Note: In a real implementation, this would interact with the database
-        """
         print(f"Flight {flight} added successfully.")
-        # Implementation would:
-        # 1. Validate flight details
-        # 2. Insert into Flights table
-        # 3. Return success status
 
     def remove_flight(self, flight_id):
-        """
-        Remove a flight from the system
-        
-        Args:
-            flight_id: ID of the flight to remove
-            
-        Returns:
-            bool: True if removal succeeded, False otherwise
-        """
         print(f"Flight {flight_id} removed successfully.")
-        # Implementation would:
-        # 1. Verify flight exists
-        # 2. Check for existing bookings
-        # 3. Delete from database
-        # 4. Return success status
 
     def manage_airline_operations(self):
-        """Display menu for managing airline operations"""
         print("Managing airline operations...")
-        # Would typically show a menu of admin options
 
     def assign_gate(self, flight_id, gate_number):
-        """
-        Assign a gate to a specific flight
-        
-        Args:
-            flight_id: ID of the flight to modify
-            gate_number: Gate number to assign
-        """
         print(f"Assigned gate {gate_number} to flight {flight_id}.")
-        # Would update flight record in database
 
     def monitor_flight_status(self, flight_id):
-        """
-        Monitor the status of a specific flight
-        
-        Args:
-            flight_id: ID of the flight to monitor
-        """
         print(f"Monitoring status of flight {flight_id}.")
-        # Would retrieve and display flight status
 
     def generate_reports(self):
-        """Generate system reports"""
         print("Generating reports...")
-        # Would compile and display various system reports
-
 
 
 class CrewMember(User):
-    """Crew Member user type with flight operations capabilities."""
-
     def __init__(self, username, email, password, contact_number, 
                  crew_id=None, position=None, airline=None):
         super().__init__(username, email, password, contact_number)
@@ -447,25 +270,24 @@ class CrewMember(User):
 
         try:
             cursor.execute(f"SELECT * FROM {self.get_table_name()} WHERE user_name = ?", 
-                           (self.username,))
+                         (self.username,))
             if cursor.fetchone():
                 print(f"Crew Member {self.username} already exists!")
                 return False
-
-            password_hash = self._hash_password(self.password)
+            
             fields = self.get_extra_fields()
             
             cursor.execute(f"""
                 INSERT INTO {self.get_table_name()} 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                self.username, self.email, password_hash, self.contact_number,
-                fields['crew_id'], fields['position'], fields['airline']
-            ))
+                """, (
+                    self.username, self.email, self.password, self.contact_number,
+                    fields['crew_id'], fields['position'], fields['airline']
+                ))
             connection.commit()
             print(f"Crew Member {self.username} signed up successfully!")
             return True
-
+            
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             connection.rollback()
@@ -474,23 +296,21 @@ class CrewMember(User):
     def sign_in(self, cursor):
         try:
             cursor.execute(f"""
-                SELECT password_hash FROM {self.get_table_name()} 
+                SELECT password FROM {self.get_table_name()} 
                 WHERE user_name = ?
-            """, (self.username,))
+                """, (self.username,))
             result = cursor.fetchone()
-
-            if result and bcrypt.checkpw(self.password.encode(), result[0]):
+            
+            if result and self.password == result[0]:
                 print(f"Welcome back Crew Member {self.username}!")
                 return True
             else:
                 print("Invalid username or password.")
                 return False
-
+                
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return False
-
-    # ----------- Crew Member Operations -----------
 
     def view_assigned_flights(self, start_date=None, end_date=None):
         print(f"Viewing assigned flights for crew {self.crew_id}")
@@ -510,6 +330,7 @@ class CrewMember(User):
     def check_in_for_flight(self, flight_id):
         print(f"Crew member {self.username} checked in for flight {flight_id}")
         return True
+
 
 
 class Flight:
@@ -745,47 +566,38 @@ class LoyaltyProgram:
 
 
 def main():
-    """Main application entry point"""
-    
-    # Initialize database tables
     initialize_database()  
     connection = get_connection()
     cursor = connection.cursor()
 
     while True:
-        # Main menu
         print("\nAirline Management System")
         print("1. Passenger")
         print("2. Administrator")
         print("3. Crew Member")
         print("4. Exit")
         
-        # Get user type selection
         user_type = input("Select user type (1-4): ").strip()
         
         if user_type == "4":
-            break  # Exit the application
+            break
             
         if user_type not in ("1", "2", "3"):
             print("Invalid choice. Please try again.")
             continue
             
-        # Get action (sign up or sign in)
         action = input("Do you want to Sign Up or Sign In? (Enter 'Sign Up' or 'Sign In'): ").strip().lower()
 
         if action == "sign up":
             print("\nRegistration Process:")
-            # Common registration fields
             username = input("Enter username: ")
             
-            # Email validation
             while True:
                 email = input("Enter email: ")
                 if User._validate_email(email):
                     break
                 print("Invalid email format! Example: user@example.com")
             
-            # Password validation
             while True:
                 password = input("Enter password (min 8 chars): ")
                 if User._validate_password(password):
@@ -794,8 +606,7 @@ def main():
 
             contact_number = input("Enter contact number: ")
             
-            # User type specific registration
-            if user_type == "1":  # Passenger
+            if user_type == "1":
                 passenger_id = input("Enter passenger ID: ")
                 age = int(input("Enter age: "))
                 gender = input("Enter gender: ")
@@ -806,14 +617,14 @@ def main():
                                passenger_id, age, gender, passport_number, 
                                frequent_flyer_status)
                 
-            elif user_type == "2":  # Administrator
+            elif user_type == "2":
                 admin_id = input("Enter admin ID: ")
                 role = input("Enter role: ")
                 
                 user = Administrator(username, email, password, contact_number,
                                    admin_id, role)
                 
-            else:  # Crew Member
+            else:
                 crew_id = input("Enter crew ID: ")
                 position = input("Enter position: ")
                 airline = input("Enter airline: ")
@@ -821,7 +632,6 @@ def main():
                 user = CrewMember(username, email, password, contact_number,
                                 crew_id, position, airline)
             
-            # Attempt registration
             if user.sign_up(cursor, connection):
                 print("Registration successful!")
             else:
@@ -832,25 +642,21 @@ def main():
             username = input("Enter username: ")
             password = input("Enter password: ")
             
-            # Create appropriate user object
-            if user_type == "1":  # Passenger
+            if user_type == "1":
                 user = Passenger(username, "", password, "")
-            elif user_type == "2":  # Administrator
+            elif user_type == "2":
                 user = Administrator(username, "", password, "")
-            else:  # Crew Member
+            else:
                 user = CrewMember(username, "", password, "")
             
-            # Attempt login
             if user.sign_in(cursor):
                 print("Proceeding to the dashboard...")
-                # Here you would show the appropriate dashboard for each user type
             else:
                 print("Invalid credentials.")
                 
         else:
             print("Invalid choice. Please enter 'Sign Up' or 'Sign In'.")
 
-    # Clean up database connection
     connection.close()
 
 if __name__ == "__main__":

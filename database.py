@@ -13,7 +13,7 @@ def initialize_database():
     CREATE TABLE IF NOT EXISTS Passenger (
         user_name TEXT PRIMARY KEY,
         email TEXT NOT NULL,
-        password_hash BLOB NOT NULL,
+        password TEXT NOT NULL,
         contact_number TEXT,
         passenger_id TEXT,
         age INTEGER,
@@ -28,7 +28,7 @@ def initialize_database():
     CREATE TABLE IF NOT EXISTS Administrator (
         user_name TEXT PRIMARY KEY,
         email TEXT NOT NULL,
-        password_hash BLOB NOT NULL,
+        password TEXT NOT NULL,
         contact_number TEXT,
         admin_id TEXT UNIQUE,
         role TEXT
@@ -40,7 +40,7 @@ def initialize_database():
     CREATE TABLE IF NOT EXISTS CrewMember (
         user_name TEXT PRIMARY KEY,
         email TEXT NOT NULL,
-        password_hash BLOB NOT NULL,
+        password TEXT NOT NULL,
         contact_number TEXT,
         crew_id TEXT UNIQUE,
         position TEXT,
