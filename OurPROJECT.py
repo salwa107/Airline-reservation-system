@@ -1,9 +1,7 @@
+import bcrypt
+import re
 import sqlite3
-from database import cursor, connection
-
-def create_database():
-    conn = sqlite3.connect('project_data.db')
-    cursor = conn.cursor()
+from database import initialize_database, get_connection
 
 class User:
     def __init__(self, username, email, password, contact_number):
@@ -40,35 +38,64 @@ class Passenger(User):
         self.booking_history = []
         self.loyalty_points = 0
 
-    # Method to sign up the user (insert them into the database)
-    def sign_up(self, cursor):
-        # First, check if the user already exists in the database
-        cursor.execute("SELECT * FROM Passenger WHERE user_name = ?", (self.username,))
-        user = cursor.fetchone()  # Fetching user data, if any
+    def sign_up(self, cursor, connection):
+        # Validate inputs first
+        if not self._validate_email():
+            print("Invalid email format!")
+            return False
+        if not self._validate_password():
+            print("Password must be at least 8 characters.")
+            return False
 
-        if user:
-            # If user is found, print a message
-            print(f"User {self.username} is already registered.")
-        else:
-            # If user is not found, insert new data
+        try:
+            cursor.execute("SELECT * FROM Passenger WHERE user_name = ?", (self.username,))
+            if cursor.fetchone():
+                print(f"User {self.username} already exists!")
+                return False
+            
+            password_hash = self._hash_password()
+            
             cursor.execute("""
-            INSERT INTO Passenger (user_name, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (self.username, self.email, self.password, self.contact_number, self.passenger_id, self.age, self.gender, self.passport_number, self.frequent_flyer_status))
+            INSERT INTO Passenger VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                self.username, self.email, password_hash, self.contact_number,
+                self.passenger_id, self.age, self.gender, 
+                self.passport_number, self.frequent_flyer_status
+            ))
+            connection.commit()
             print(f"Passenger {self.username} signed up successfully!")
+            return True
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            connection.rollback()
+            return False
 
-    # Method to sign in the user (verify username and password)
     def sign_in(self, cursor):
-        # Checking if the user exists and the password is correct
-        cursor.execute("SELECT * FROM Passenger WHERE user_name = ? AND password = ?", (self.username, self.password))
-        user = cursor.fetchone()
+        try:
+            cursor.execute("SELECT password_hash FROM Passenger WHERE user_name = ?", (self.username,))
+            result = cursor.fetchone()
+            
+            if result and bcrypt.checkpw(self.password.encode(), result[0]):
+                print(f"Welcome back, {self.username}!")
+                return True
+            else:
+                print("Invalid username or password.")
+                return False
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return False
 
-        if user:
-            print(f"Welcome back, {self.username}!")
-            return True  # Successful login
-        else:
-            print("Invalid username or password. Please try again.")
-            return False  # Failed login
+    # Password security methods
+    def _hash_password(self):
+        return bcrypt.hashpw(self.password.encode(), bcrypt.gensalt())
+
+    # Input validation methods
+    def _validate_email(self):
+        return re.match(r"[^@]+@[^@]+\.[^@]+", self.email)
+
+    def _validate_password(self):
+        return len(self.password) >= 8  # Minimum 8 characters
+
         
     def book_flight(self, flight):
         self.booking_history.append(flight)
@@ -329,26 +356,6 @@ class Seat:
             print(f"Seat {self.seat_number} on flight {self.flight} is now available.")
         else:
             print(f"Seat {self.seat_number} is already available!")
-#<<<<<<< HEAD
-# seat1 = Seat(None,None,None,None,None) #temporarly no attributes
-# seat1.reserve_seat()
-# seat1.release_seat()
-#=======
-
-#>>>>>>> Ismail
-# class CrewMember(User):
-#     def __init__(self, crew_id, name, role, assigned_flights=None):
-#         self.crew_id = crew_id
-#         self.name = name
-#         self.role = role
-#         self.assigned_flights = assigned_flights if assigned_flights is not None else []
-
-#     def assign_flight(self, flight):
-#         self.assigned_flights.append(flight)
-
-#     def remove_from_flight(self, flight):
-#         if flight in self.assigned_flights:
-#             self.assigned_flights.remove(flight)
 
 
 class LoyaltyProgram:
@@ -376,19 +383,33 @@ class LoyaltyProgram:
 
 
 def main():
-    # Connect to the SQLite database
-    connection = sqlite3.connect('project_data.db')
+    initialize_database()  
+
+    connection = get_connection()
     cursor = connection.cursor()
 
-    # Ask the user if they want to sign up or sign in
     choice = input("Do you want to Sign Up or Sign In? (Enter 'Sign Up' or 'Sign In'): ").strip().lower()
 
+    
+
     if choice == "sign up":
-        # **SIGN UP**: User inputs their details
         print("Welcome to the registration process!")
         username = input("Enter your username: ")
-        email = input("Enter your email: ")
-        password = input("Enter your password: ")
+        
+        # Email validation loop in main()
+        while True:
+            email = input("Enter your email: ")
+            if re.match(r"[^@]+@[^@]+\.[^@]+", email):  # <-- NOW IN MAIN
+                break
+            print("Invalid email format! Example: user@example.com")
+        
+        # Password validation loop
+        while True:
+            password = input("Enter your password (min 8 chars): ")
+            if len(password) >= 8:
+                break
+            print("Password too short!")
+
         contact_number = input("Enter your contact number: ")
         passenger_id = input("Enter your passenger ID: ")
         age = int(input("Enter your age: "))
@@ -397,30 +418,26 @@ def main():
         frequent_flyer_status = input("Enter your frequent flyer status (e.g., Silver/Gold): ")
 
         new_passenger = Passenger(username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
-        new_passenger.sign_up(cursor)
-
-        # Commit the transaction to save changes to the database
-        connection.commit()
+        if new_passenger.sign_up(cursor, connection):
+            print("Registration successful!")
+        else:
+            print("Registration failed.")
 
     elif choice == "sign in":
-        # **SIGN IN**: User enters username and password to log in
         print("\n--- Sign In ---")
-        sign_in_username = input("Enter your username: ")
-        sign_in_password = input("Enter your password: ")
+        username = input("Enter your username: ")
+        password = input("Enter your password: ")
 
-        passenger_to_sign_in = Passenger(sign_in_username, "", sign_in_password, "", 0, 0, "", "", "")
-        if passenger_to_sign_in.sign_in(cursor):
-            # If sign in is successful, you can proceed with other actions
+        passenger = Passenger(username, "", password, "", 0, 0, "", "", "")
+        if passenger.sign_in(cursor):
             print("Proceeding to the dashboard...")
         else:
-            print("Failed to sign in.")
+            print("Invalid credentials.")
 
     else:
         print("Invalid choice. Please enter 'Sign Up' or 'Sign In'.")
 
-    # Close the database connection
     connection.close()
 
-# Run the main function
 if __name__ == "__main__":
     main()
