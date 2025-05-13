@@ -3,11 +3,6 @@ import re
 import sqlite3
 from database import initialize_database, get_connection
 
-
-def create_database():
-    conn = sqlite3.connect('project_data.db')
-    cursor = conn.cursor()
-
 class User:
     def __init__(self, username, email, password, contact_number):
         self.__username = username 
@@ -58,7 +53,6 @@ class Passenger(User):
                 print(f"User {self.username} already exists!")
                 return False
             
-            # Hash password before storing
             password_hash = self._hash_password()
             
             cursor.execute("""
@@ -424,7 +418,7 @@ def main():
         frequent_flyer_status = input("Enter your frequent flyer status (e.g., Silver/Gold): ")
 
         new_passenger = Passenger(username, email, password, contact_number, passenger_id, age, gender, passport_number, frequent_flyer_status)
-        if new_passenger.sign_up(cursor, conn):
+        if new_passenger.sign_up(cursor, connection):
             print("Registration successful!")
         else:
             print("Registration failed.")
@@ -443,7 +437,7 @@ def main():
     else:
         print("Invalid choice. Please enter 'Sign Up' or 'Sign In'.")
 
-    conn.close()
+    connection.close()
 
 if __name__ == "__main__":
     main()
