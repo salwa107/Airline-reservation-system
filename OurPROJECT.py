@@ -154,6 +154,23 @@ class Passenger(User):
     def check_in(self):
         print("Checked in successfully.")
 
+class SignInProxy:
+    def __init__(self, passenger):
+        self.passenger = passenger
+        self._authenticated = False
+
+    def sign_in(self, cursor):
+        print("[Proxy] Attempting to sign in through proxy...")
+        if self.passenger.sign_in(cursor):
+            self._authenticated = True
+            print("[Proxy] Authentication successful!")
+            return True
+        else:
+            print("[Proxy] Authentication failed!")
+            return False
+
+    def is_authenticated(self):
+        return self._authenticated
 
 class Administrator(User):
     def __init__(self, username, email, password, contact_number, 
@@ -559,12 +576,6 @@ class LoyaltyProgram:
 
 
 
-
-
-    
-
-
-
 def main():
     initialize_database()  
     connection = get_connection()
@@ -580,6 +591,7 @@ def main():
         user_type = input("Select user type (1-4): ").strip()
         
         if user_type == "4":
+            print("Exiting... Goodbye!")
             break
             
         if user_type not in ("1", "2", "3"):
@@ -589,71 +601,80 @@ def main():
         action = input("Do you want to Sign Up or Sign In? (Enter 'Sign Up' or 'Sign In'): ").strip().lower()
 
         if action == "sign up":
-            print("\nRegistration Process:")
-            username = input("Enter username: ")
-            
-            while True:
-                email = input("Enter email: ")
-                if User._validate_email(email):
-                    break
-                print("Invalid email format! Example: user@example.com")
-            
-            while True:
-                password = input("Enter password (min 8 chars): ")
-                if User._validate_password(password):
-                    break
-                print("Password too short!")
+            print("\n--- Registration Process ---")
 
+            username = input("Enter username: ")
+            email = input("Enter email: ")
+            password = input("Enter password (min 8 chars): ")
             contact_number = input("Enter contact number: ")
-            
-            if user_type == "1":
-                passenger_id = input("Enter passenger ID: ")
-                age = int(input("Enter age: "))
+
+            if user_type == "1":  # Passenger
+                age = input("Enter age: ")
                 gender = input("Enter gender: ")
                 passport_number = input("Enter passport number: ")
                 frequent_flyer_status = input("Enter frequent flyer status: ")
-                
-                user = Passenger(username, email, password, contact_number,
-                               passenger_id, age, gender, passport_number, 
-                               frequent_flyer_status)
-                
-            elif user_type == "2":
+                user = Passenger(
+                    username, email, password, contact_number,
+                    passenger_id=None, age=age, gender=gender,
+                    passport_number=passport_number,
+                    frequent_flyer_status=frequent_flyer_status
+                )
+
+            elif user_type == "2":  # Administrator
                 admin_id = input("Enter admin ID: ")
                 role = input("Enter role: ")
-                
-                user = Administrator(username, email, password, contact_number,
-                                   admin_id, role)
-                
-            else:
+                user = Administrator(
+                    username, email, password, contact_number,
+                    admin_id=admin_id, role=role
+                )
+
+            elif user_type == "3":  # Crew Member
                 crew_id = input("Enter crew ID: ")
                 position = input("Enter position: ")
                 airline = input("Enter airline: ")
-                
-                user = CrewMember(username, email, password, contact_number,
-                                crew_id, position, airline)
-            
+                user = CrewMember(
+                    username, email, password, contact_number,
+                    crew_id=crew_id, position=position, airline=airline
+                )
+
+            else:
+                print("Unknown user type.")
+                continue
+
             if user.sign_up(cursor, connection):
                 print("Registration successful!")
             else:
                 print("Registration failed.")
-                
+
         elif action == "sign in":
-            print("\nLogin Process:")
-            username = input("Enter username: ")
-            password = input("Enter password: ")
-            
-            if user_type == "1":
-                user = Passenger(username, "", password, "")
-            elif user_type == "2":
-                user = Administrator(username, "", password, "")
+            print("\n--- Sign In ---")
+            username = input("Enter your username: ")
+            password = input("Enter your password: ")
+
+            # Instantiate appropriate user type with minimum fields (email and contact empty since not needed here)
+            if user_type == "1":  # Passenger
+                real_user = Passenger(username, "", password, "", None, None, None, None, None)
+                proxy = SignInProxy(real_user)
+                authenticated = proxy.sign_in(cursor)
+
+            elif user_type == "2":  # Administrator
+                real_user = Administrator(username, "", password, "", None, None)
+                authenticated = real_user.sign_in(cursor)  # No proxy for admin here, but you could add one if you want
+
+            elif user_type == "3":  # Crew Member
+                real_user = CrewMember(username, "", password, "", None, None, None)
+                authenticated = real_user.sign_in(cursor)  # No proxy here, but can add proxy similarly
+
             else:
-                user = CrewMember(username, "", password, "")
-            
-            if user.sign_in(cursor):
-                print("Proceeding to the dashboard...")
+                print("Unknown user type.")
+                continue
+
+            if authenticated:
+                print(f"Access granted. Welcome {username}!")
+                # Here you can add dashboard logic or next steps for the user
             else:
-                print("Invalid credentials.")
-                
+                print("Access denied. Invalid credentials.")
+
         else:
             print("Invalid choice. Please enter 'Sign Up' or 'Sign In'.")
 
