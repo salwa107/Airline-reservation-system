@@ -1,5 +1,7 @@
 from tkinter import *
+import subprocess
 import sqlite3
+
 root = Tk()
 root.title("Airplan Reservation System Project")
 
@@ -71,6 +73,9 @@ def SignUp2(valu):
         widgetlist += [label1, usernamePass, label2, emailPass, label3, passwordPass,
                        label4, contactPass, label5, idPass, label6, age,
                        label7, gender, label8, passportNum, label9, frequentFly, confirmfinal]
+        
+    #################################################
+
 
     elif valu == 2:
         label11 = Label(signwindow, text="UserName")
@@ -111,6 +116,8 @@ def SignUp2(valu):
 
 
 
+#################################################
+#################################################
 
     
 
@@ -127,6 +134,7 @@ def SignUp1():
     user = IntVar()
     user.set(1)
     
+    #Radiobuttons
     Radiobutton(signwindow, text = "Passenger", variable = user, value = 1).grid(row = 0, column = 0, padx = (10,0))
     Radiobutton(signwindow, text = "Adminstrator", variable = user, value = 2).grid(row = 1, column = 0, padx = (10,0))
     
@@ -135,42 +143,122 @@ def SignUp1():
     cancle = Button(signwindow, text = "Cancel", command = signwindow.destroy).grid(row = 2, column = 0)
 
 
-
+#################################################
+#################################################
 
 
 #method of new account to db
 def newaccount(value):
     
+    #the database update
+    #if for Passenger
     if value == 1:
-        Label(signwindow, text = "this is 1").grid()
+        
 
-    elif value == 2:
-        Label(signwindow, text = "this is 2").grid()
 
-        #the database update
+        connect = sqlite3.connect("project_data.db")
+        cursor = connect.cursor()
 
-        #connect = sqlite3.connect("project_data.db")
-        #cursor = connect.cursor()
-        #cursor.execute("")
+        cursor.execute(
+            "INSERT INTO Passenger VALUES(:usernamePass, :emailPass, :passwordPass, :contactPass, :idPass, :age, :gender, :passportNum, :frequentFly)",
+            {
+            "usernamePass": usernamePass.get(),
+            "emailPass": emailPass.get(),
+            "passwordPass": passwordPass.get(),
+            "contactPass": contactPass.get(),
+            "idPass": idPass.get(),
+            "age": age.get(),
+            "gender": gender.get(),
+            "passportNum": passportNum.get(),
+            "frequentFly": frequentFly.get()
+            }
+            )
+        
+        connect.commit()
+        connect.close()
 
         #crash the window
+        signwindow.destroy()
 
-        #signwindow.destroy()
+
+        #Label(signwindow, text = "this is 1").grid()
+
+    #####################################################
+
+    #else if for Administrator
+    elif value == 2:
+        
+        #Label(signwindow, text = "this is 2").grid()
+
+
+        connect = sqlite3.connect("project_data.db")
+        cursor = connect.cursor()
+        cursor.execute(
+            "INSERT INTO Administrator VALUES(:usernameAdmin, :emailAdmin, :passwordAdmin, :contactAdmin, :idAdmin, :role)",
+            {
+            "usernameAdmin": usernameAdmin.get(),
+            "emailAdmin": emailAdmin.get(),
+            "passwordAdmin": passwordAdmin.get(),
+            "contactAdmin": contactAdmin.get(),
+            "idAdmin": idAdmin.get(),
+            "role": role.get()
+            }
+        )
+
+        
+        connect.commit()
+        connect.close()
+
+        #crash the window
+        signwindow.destroy()
+    
+    #################################################
+    #################################################
+
 
 
 #the checkmethod after clicking the cont button
 ### need lots if fixes ###
-def checkmethod():
-    Name = entryName.get()
-    Password = entryPassword.get()
+
+def checkmethod(value):
 
     #if name or password wasn't filled (Empty Strings)
-
     #if the name and password are existed (Sign in)
-
     #if the username is existed (To Sign Up)
-
     #if the password is wrong (Return False)
+
+    if value == 1:
+        
+        Label(framebg, text = "It's nothing").pack()
+
+    elif value == 2:
+        
+        connect = sqlite3.connect("project_data.db")
+        cursor = connect.cursor()
+
+        #SELECT 1 is used because we only care whether a match exists, not the actual data
+        cursor.execute("SELECT 1 FROM Administrator WHERE email = ? AND password = ?", (entryName.get(), entryPassword.get()))
+        result = cursor.fetchone()
+
+
+        if result:
+            
+            subprocess.Popen(["python", "Airline-reservation-system\AdminHome.py"])
+            root.quit()
+
+        else:
+            raise Exception("Email or Password isn't True, Try again!!")
+        
+        ##
+        connect.commit()
+        connect.close()
+        
+
+        
+
+    
+#################################################
+#################################################
 
 
 #defining the Label frames
@@ -180,16 +268,17 @@ framebg.pack(padx = 25, pady = 25)
 frame1.pack(padx = 100 , pady = 100)
 
 #defining the Widgets
+global entryName
+global entryPassword
+
 entryName = Entry(frame1, bd = 1, width = 50)
-namelabel = Label(frame1, text = "Name", bg= "Light Gray")
+namelabel = Label(frame1, text = "Email", bg= "Light Gray")
 entryPassword = Entry(frame1, bd = 1 , width = 50)
 passwordlabel = Label(frame1, text = "Password", bg= "Light Gray")
 
 buttonEnd = Button(frame1, text = "Quit" , padx = 1 , pady = 1,command = root.quit)
-buttonCont = Button(frame1, text = "Continue" , padx = 1, pady = 1, command = checkmethod)
+buttonCont = Button(frame1, text = "Continue" , padx = 1, pady = 1, command = lambda: checkmethod(user1.get()))
 buttonUp = Button(frame1, text = "Sign Up", padx = 1, pady = 1, command = SignUp1)
-
-
 
 
 #Shoving Widgets
@@ -202,5 +291,13 @@ passwordlabel.grid(column = 0, row = 2, pady = (0, 10))
 buttonEnd.grid(column = 0, row = 3, columnspan = 2)
 buttonCont.grid(column = 0, row = 3, columnspan = 3)
 buttonUp.grid(column = 2, row = 3, columnspan = 1)
+
+#Radiobuttons 2
+global user1
+user1 = IntVar()
+user1.set(1)
+    
+Radiobutton(frame1, text = "Passenger", variable = user1, value = 1,  background = "Light Gray").grid(row = 4, column = 1, pady = (10,0), padx = (10,0))
+Radiobutton(frame1, text = "Adminstrator", variable = user1, value = 2, background = "Light Gray").grid(row = 4, column = 2, pady = (10,0), padx = (10,0))
 
 root.mainloop()
