@@ -1,45 +1,48 @@
 import socket
-import threading
-import pickle
-from airline_system import AirlineSystem  # existing system code made into a class
+
+# Create a simple list to store bookings
+bookings = []
 
 HOST = 'localhost'
 PORT = 12345
 
-airline_system = AirlineSystem()
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((HOST, PORT))
+server_socket.listen(1)
+print(f"Server running on {HOST}:{PORT}...")
 
-def handle_client(client_socket):
-    try:
-        data = client_socket.recv(4096)
-        if not data:
-            return
-        request = pickle.loads(data)
-        command = request.get("command")
-        payload = request.get("payload")
+while True:
+    conn, addr = server_socket.accept()
+    print(f"Connected by {addr}")
+    data = conn.recv(1024).decode()
 
-        if command == "book":
-            result = airline_system.book_seat(payload)
-        elif command == "cancel":
-            result = airline_system.cancel_booking(payload)
-        elif command == "search":
-            result = airline_system.search_flight(payload)
+    response = ""
+
+    if data.startswith("BOOK "):
+        name = data[5:]
+        if name not in bookings:
+            bookings.append(name)
+            response = f"Seat booked for {name}"
         else:
-            result = "Unknown command."
+            response = f"{name} already booked."
 
-        client_socket.send(pickle.dumps(result))
-    finally:
-        client_socket.close()
+    elif data.startswith("CANCEL "):
+        name = data[7:]
+        if name in bookings:
+            bookings.remove(name)
+            response = f"Booking canceled for {name}"
+        else:
+            response = f"No booking found for {name}"
 
-def start_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen()
-    print(f"Server started on {HOST}:{PORT}")
-    while True:
-        client_socket, addr = server.accept()
-        print(f"Connected by {addr}")
-        thread = threading.Thread(target=handle_client, args=(client_socket,))
-        thread.start()
+    elif data.startswith("SEARCH "):
+        name = data[7:]
+        if name in bookings:
+            response = f"{name} has a booking."
+        else:
+            response = f"{name} does not have a booking."
 
-if __name__ == "__main__":
-    start_server()
+    else:
+        response = "Invalid command."
+
+    conn.sendall(response.encode())
+    conn.close()
