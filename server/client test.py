@@ -1,4 +1,4 @@
-import socket        #test this on your pc from your terminal
+import socket        #test this on your pc from your terminal make sure srever is running first
 
 HOST = 'localhost'
 PORT = 12345
