@@ -23,7 +23,7 @@ def calculate_price(adults, children, grade):
     return adults * flight_prices[grade]['Adult'] + children * flight_prices[grade]['Child']
 
 class AirlineApp:
-    def _init_(self, root):
+    def __init__(self, root):
         self.root = root
         self.root.title("Airline Booking System")
         self.root.geometry("450x600")
@@ -274,7 +274,7 @@ class AirlineApp:
         tk.Button(self.root, text="Save Changes", command=save_changes).pack(pady=10)
         tk.Button(self.root, text="Cancel", command=self.show_home).pack()
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     root = tk.Tk()
     app = AirlineApp(root)
     root.mainloop()
