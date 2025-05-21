@@ -31,7 +31,7 @@ def PassengerSection():
     showButPass = Button(Passframe, text = "Show Data", width = 15, command = showPass, bd = 1)
     showButPass.grid(row = 0, column = 0, padx = (10, 50), pady = (50, 10))
 
-    upButPass = Button(Passframe, text = "Update Data", width = 15, command = updatepass(), bd = 1)
+    upButPass = Button(Passframe, text = "Update Data", width = 15, command = updatepass, bd = 1)
     upButPass.grid(row = 1, column = 0, padx = (10, 50), pady = (10, 10), sticky = W)
 
     delButPass = Button(Passframe, text = "Delete Data", width = 15, command = None, bd = 1)
@@ -42,8 +42,11 @@ def PassengerSection():
 
 ###########################################
 
-def updatepass():
+def updatepass2():
 
+
+def updatepass():
+    pass
     global all_widgets
     global s
 
@@ -51,12 +54,19 @@ def updatepass():
         widget.destroy()
     all_widgets = []
 
-    frameR = LabelFrame(PassWin, text = "Update")
-    frameR.grid(row = 0, column = 1, padx = 10, pady = 10, sticky = E)
+    frameR = LabelFrame(PassWin, text="Update")
+    frameR.grid(row=0, column=1, padx=10, pady=10, sticky=E)
+
+    labelId = Label(frameR, text="Enter ID to update:")
+    labelId.grid(row=0, column=0, sticky=E)
 
     entryId = Entry(frameR)
-    entryId.grid(row = 0, column = 1, sticky = N)
+    entryId.grid(row=0, column=1, sticky=W)
 
+    confirm = Button(frameR, text = "Ok", command = updatepass2)
+
+
+    #enter the id to get the data from database and being automaticly on the entries
 
 
     
