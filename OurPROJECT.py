@@ -151,13 +151,37 @@ class Passenger(User):
     
 
 
+    import sqlite3
+
     def cancel_booking(self, booking_id):
-        for booking in self.booking_history:
-            if booking['booking_id'] == booking_id:
-                self.booking_history.remove(booking)
-                print(f"Booking {booking_id} cancelled.")
-                return
-        print(f"Booking {booking_id} not found.")
+        try:
+            conn = sqlite3.connect('flights.db')
+            cursor = conn.cursor()
+
+            # Check if the booking exists and belongs to the user
+            cursor.execute("SELECT * FROM Booking WHERE booking_id = ? AND passenger = ?", (booking_id, self.user_name))
+            booking = cursor.fetchone()
+
+            if booking:
+                # Delete the booking
+                cursor.execute("DELETE FROM Booking WHERE booking_id = ?", (booking_id,))
+                conn.commit()
+                print(f"Booking {booking_id} cancelled successfully.")
+
+                # Optional: remove from local history
+                self.booking_history = [f for f in self.booking_history if f != booking[2]]  # booking[2] = flight_id
+            else:
+                print("No booking found with that ID for this user.")
+        
+        except sqlite3.Error as e:
+            print(f"Database error occurred while cancelling: {e}")
+        
+        except Exception as ex:
+            print(f"Unexpected error: {ex}")
+        
+        finally:
+            if 'conn' in locals():
+                conn.close()
 
     def view_booking_details(self, booking_id):
         for booking in self.booking_history:
@@ -242,7 +266,7 @@ class Administrator(User):
         try:
             cursor.execute(f"""
                 SELECT password FROM {self.get_table_name()} 
-                WHERE user_name = ?
+                WHERE username = ?
                 """, (self.username,))
             result = cursor.fetchone()
             
@@ -257,11 +281,41 @@ class Administrator(User):
             print(f"Database error: {e}")
             return False
 
-    def add_flight(self, flight):
-        print(f"Flight {flight} added successfully.")
+    def flight_exists(self, flight_id, conn):
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM Flight WHERE flight_id = ?", (flight_id,))
+        return cursor.fetchone() is not None
+    def add_flight(self, flight, conn):
+        if self.flight_exists(flight.flight_id, conn):
+            print(f"Flight {flight.flight_id} already exists.")
+            return
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO Flight (flight_id, airline, source, destination, departure_time, arrival_time, available_seats)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            flight.flight_id,
+            flight.airline,
+            flight.source,
+            flight.destination,
+            flight.departure_time,
+            flight.arrival_time,
+            flight.available_seats
+        ))
+        conn.commit()
+        print(f"Flight {flight.flight_id} added successfully.")
 
-    def remove_flight(self, flight_id):
+    def remove_flight(self, flight_id, conn):
+        if not self.flight_exists(flight_id, conn):
+            print(f"Flight {flight_id} does not exist.")
+            return
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Flight WHERE flight_id = ?", (flight_id,))
+        conn.commit()
         print(f"Flight {flight_id} removed successfully.")
+
+
+
 
     def manage_airline_operations(self):
         print("Managing airline operations...")
@@ -331,7 +385,7 @@ class CrewMember(User):
         try:
             cursor.execute(f"""
                 SELECT password FROM {self.get_table_name()} 
-                WHERE user_name = ?
+                WHERE username = ?
                 """, (self.username,))
             result = cursor.fetchone()
             
