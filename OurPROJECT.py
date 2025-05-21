@@ -645,6 +645,16 @@ class LoyaltyProgram:
             return True
         return False
 
+# ----- Networking functions for server access -----
+
+reservations = []
+
+def book_seat(name, seat):
+    reservations.append({'name': name, 'seat': seat})
+    return f"Seat {seat} booked for {name}"
+
+def list_reservations():
+    return reservations
 
 
 def main():
