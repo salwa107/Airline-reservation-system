@@ -43,10 +43,10 @@ def PassengerSection():
 ###########################################
 
 def updatepass2():
-
+    pass
 
 def updatepass():
-    pass
+    
     global all_widgets
     global s
 

@@ -241,7 +241,7 @@ def checkmethod(value):
 
         if result:
             
-            #subprocess.Popen(["python", "Airline-reservation-system\AdminHome.py"])
+            subprocess.Popen(["python", "Airline-reservation-system\passenger.py"])
             root.quit()
 
         else:
