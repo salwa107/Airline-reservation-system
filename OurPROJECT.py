@@ -147,7 +147,11 @@ class Passenger(User):
         conn.close()
 
         print(f"Flight {flight_id} booked successfully! Booking ID: {booking_id}")
-  
+    
+    
+
+
+    import sqlite3
 
     def cancel_booking(self, booking_id):
         try:
@@ -179,28 +183,18 @@ class Passenger(User):
             if 'conn' in locals():
                 conn.close()
 
-
-
     def view_booking_details(self, booking_id):
-        try:
-            conn = sqlite3.connect('flights.db')
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM Booking WHERE booking_id = ? AND passenger = ?", (booking_id, self.username))
-            booking = cursor.fetchone()
-
-            if booking:
-                print("Booking Details:", booking)
+        for booking in self.booking_history:
+            if booking['booking_id'] == booking_id:
                 return booking
-            else:
-                print(f"Booking {booking_id} not found in database.")
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-        finally:
-            if 'conn' in locals():
-                conn.close()
+        print(f"Booking {booking_id} not found.")
 
+    def request_special_assistance(self):
+        print("Special assistance requested.")
 
-    
+    def check_in(self):
+        print("Checked in successfully.")
+
 class SignInProxy:
     def __init__(self, passenger):
         self.passenger = passenger
@@ -272,7 +266,7 @@ class Administrator(User):
         try:
             cursor.execute(f"""
                 SELECT password FROM {self.get_table_name()} 
-                WHERE user_name = ?
+                WHERE username = ?
                 """, (self.username,))
             result = cursor.fetchone()
             
@@ -311,7 +305,16 @@ class Administrator(User):
         conn.commit()
         print(f"Flight {flight.flight_id} added successfully.")
 
-        
+    def remove_flight(self, flight_id, conn):
+        if not self.flight_exists(flight_id, conn):
+            print(f"Flight {flight_id} does not exist.")
+            return
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Flight WHERE flight_id = ?", (flight_id,))
+        conn.commit()
+        print(f"Flight {flight_id} removed successfully.")
+
+
 
 
     def manage_airline_operations(self):
@@ -382,7 +385,7 @@ class CrewMember(User):
         try:
             cursor.execute(f"""
                 SELECT password FROM {self.get_table_name()} 
-                WHERE user_name = ?
+                WHERE username = ?
                 """, (self.username,))
             result = cursor.fetchone()
             

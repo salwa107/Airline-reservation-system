@@ -240,5 +240,3 @@ def insert_sample_data():
 
     connection.commit()
     connection.close()
-    print("Sample data inserted successfully!")
-
