@@ -1,1 +1,3 @@
-, bd = 1
+for widget in widgetlist:
+        widget.destroy()
+    widgetlist = []
