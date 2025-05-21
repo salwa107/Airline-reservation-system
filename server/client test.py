@@ -1,18 +1,30 @@
-import socket        #test this on your pc from your terminal make sure server is running first
+import socket
+import json
 
-HOST = 'localhost'
-PORT = 12345
+def book_seat():
+    name = input("Enter your name: ")
+    seat = input("Enter seat number (e.g., 3A): ")
 
-def send_request(command):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        s.sendall(command.encode())
-        response = s.recv(1024).decode()
-        print("Server:", response)
+    request = {
+        "command": "book",
+        "name": name,
+        "seat": seat
+    }
 
-# Example usage
-send_request("BOOK Hamza")
-send_request("SEARCH Hamza")
-send_request("CANCEL Hamza")
-send_request("SEARCH Hamza")
+    return request
 
+def main():
+    host = 'localhost'
+    port = 12345
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+        client_socket.connect((host, port))
+
+        request = book_seat()
+
+        client_socket.send(json.dumps(request).encode())
+        response = client_socket.recv(4096).decode()
+        print("Server response:", response)
+
+if __name__ == '__main__':
+    main()
