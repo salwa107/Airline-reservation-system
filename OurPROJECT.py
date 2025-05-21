@@ -147,30 +147,60 @@ class Passenger(User):
         conn.close()
 
         print(f"Flight {flight_id} booked successfully! Booking ID: {booking_id}")
-    
-    
-
+  
 
     def cancel_booking(self, booking_id):
-        for booking in self.booking_history:
-            if booking['booking_id'] == booking_id:
-                self.booking_history.remove(booking)
-                print(f"Booking {booking_id} cancelled.")
-                return
-        print(f"Booking {booking_id} not found.")
+        try:
+            conn = sqlite3.connect('flights.db')
+            cursor = conn.cursor()
+
+            # Check if the booking exists and belongs to the user
+            cursor.execute("SELECT * FROM Booking WHERE booking_id = ? AND passenger = ?", (booking_id, self.user_name))
+            booking = cursor.fetchone()
+
+            if booking:
+                # Delete the booking
+                cursor.execute("DELETE FROM Booking WHERE booking_id = ?", (booking_id,))
+                conn.commit()
+                print(f"Booking {booking_id} cancelled successfully.")
+
+                # Optional: remove from local history
+                self.booking_history = [f for f in self.booking_history if f != booking[2]]  # booking[2] = flight_id
+            else:
+                print("No booking found with that ID for this user.")
+        
+        except sqlite3.Error as e:
+            print(f"Database error occurred while cancelling: {e}")
+        
+        except Exception as ex:
+            print(f"Unexpected error: {ex}")
+        
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+
 
     def view_booking_details(self, booking_id):
-        for booking in self.booking_history:
-            if booking['booking_id'] == booking_id:
+        try:
+            conn = sqlite3.connect('flights.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Booking WHERE booking_id = ? AND passenger = ?", (booking_id, self.username))
+            booking = cursor.fetchone()
+
+            if booking:
+                print("Booking Details:", booking)
                 return booking
-        print(f"Booking {booking_id} not found.")
+            else:
+                print(f"Booking {booking_id} not found in database.")
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        finally:
+            if 'conn' in locals():
+                conn.close()
 
-    def request_special_assistance(self):
-        print("Special assistance requested.")
 
-    def check_in(self):
-        print("Checked in successfully.")
-
+    
 class SignInProxy:
     def __init__(self, passenger):
         self.passenger = passenger
