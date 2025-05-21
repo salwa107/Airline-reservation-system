@@ -1,9 +1,11 @@
 from tkinter import *
+from tkinter import messagebox
 import subprocess
 import sqlite3
 
 root = Tk()
 root.title("Airplan Reservation System Project")
+#root.iconbitmap("D:\University\Programmes\Foundamental\PROJECTS\Mini Project1\Airline-reservation-system\Airline-reservation-system\Photos\airline_icon.ico")
 
 #the sign up method to save the new data to database
 widgetlist = []
@@ -127,6 +129,7 @@ def SignUp1():
     global signwindow
     signwindow = Toplevel()
     signwindow.title("Sign Up Window")
+    #signwindow.iconbitmap("Airline-reservation-system\Photos\airline_icon.ico")
     signwindow.geometry("800x400")
 
     #Radiobuttons variable definition
@@ -229,7 +232,23 @@ def checkmethod(value):
 
     if value == 1:
         
-        Label(framebg, text = "It's nothing").pack()
+        connect = sqlite3.connect("project_data.db")
+        cursor = connect.cursor()
+        
+        cursor.execute("SELECT 1 FROM Passenger WHERE email = ? AND password = ?", (entryName.get(), entryPassword.get()))
+        result = cursor.fetchone()
+
+
+        if result:
+            
+            #subprocess.Popen(["python", "Airline-reservation-system\AdminHome.py"])
+            root.quit()
+
+        else:
+            R1 = messagebox.showerror("Wrong Data", "mail or Password isn't True, Try again!!")
+
+        connect.commit()
+        connect.close()
 
     elif value == 2:
         
@@ -247,7 +266,8 @@ def checkmethod(value):
             root.quit()
 
         else:
-            raise Exception("Email or Password isn't True, Try again!!")
+            R = messagebox.showerror("Wrong Data", "mail or Password isn't True, Try again!!")
+            
         
         ##
         connect.commit()
