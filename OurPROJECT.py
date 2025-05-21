@@ -2,8 +2,9 @@ import re
 import sqlite3
 from abc import ABC, abstractmethod
 from database import initialize_database, get_connection
-
-
+import uuid
+conn = sqlite3.connect('project_data.db') 
+cursor = conn.cursor()
 class User(ABC):
     def __init__(self, username, email, password, contact_number):
         self.__username = username 
@@ -129,10 +130,26 @@ class Passenger(User):
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return False
+    def book_flight(self, flight_id, ticket_id):
+        self.booking_history.append(flight_id)
 
-    def book_flight(self, flight):
-        self.booking_history.append(flight)
-        print(f"Flight {flight} booked successfully.")
+        booking_id = str(uuid.uuid4())  # generate unique booking ID
+
+        conn = sqlite3.connect('flights.db')
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO Booking (booking_id, passenger, flight_id, ticket_id)
+            VALUES (?, ?, ?, ?)
+        """, (booking_id, self.user_name, flight_id, ticket_id))
+
+        conn.commit()
+        conn.close()
+
+        print(f"Flight {flight_id} booked successfully! Booking ID: {booking_id}")
+    
+    
+
 
     def cancel_booking(self, booking_id):
         for booking in self.booking_history:
