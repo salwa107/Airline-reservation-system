@@ -1,35 +1,35 @@
 import unittest
-import ourproject
+import OurPROJECT
 
 class TestReservationSystem(unittest.TestCase):
 
     def setUp(self):
-        ourproject.reservations.clear()
+        OurPROJECT.reservations.clear()
 
     def test_booking_new_user(self):
-        result = ourproject.book("Alice")
+        result = OurPROJECT.book("Alice")
         self.assertEqual(result, "Booking confirmed for Alice")
-        self.assertIn("Alice", ourproject.reservations)
+        self.assertIn("Alice", OurPROJECT.reservations)
 
     def test_booking_duplicate_user(self):
-        ourproject.book("Bob")
-        result = ourproject.book("Bob")
+        OurPROJECT.book("Bob")
+        result = OurPROJECT.book("Bob")
         self.assertEqual(result, "Bob already booked")
 
     def test_cancel_existing_user(self):
-        ourproject.book("Charlie")
-        result = ourproject.cancel("Charlie")
+        OurPROJECT.book("Charlie")
+        result = OurPROJECT.cancel("Charlie")
         self.assertEqual(result, "Booking cancelled for Charlie")
-        self.assertNotIn("Charlie", ourproject.reservations)
+        self.assertNotIn("Charlie", OurPROJECT.reservations)
 
     def test_cancel_nonexistent_user(self):
-        result = ourproject.cancel("Diana")
+        result = OurPROJECT.cancel("Diana")
         self.assertEqual(result, "Diana not found")
 
     def test_list_all(self):
-        ourproject.book("Eve")
-        ourproject.book("Frank")
-        self.assertEqual(ourproject.list_reservations(), ["Eve", "Frank"])
+        OurPROJECT.book("Eve")
+        OurPROJECT.book("Frank")
+        self.assertEqual(OurPROJECT.list_reservations(), ["Eve", "Frank"])
 
 if __name__ == '__main__':
     unittest.main()
