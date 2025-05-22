@@ -1,7 +1,7 @@
 import socket
 from OurPROJECT import book_seat, list_reservations
 
-HOST = 'localhost'
+HOST = '0.0.0.0'  # to accept external connections
 PORT = 12345
 
 def handle_client(conn, addr):
@@ -44,7 +44,7 @@ def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((HOST, PORT))
         server_socket.listen()
-        print(f"Server running on {HOST}:{PORT}...")
+        print(f"Server running on {HOST}:{PORT} (accessible from network)...")
 
         while True:
             conn, addr = server_socket.accept()
