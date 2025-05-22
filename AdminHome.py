@@ -36,6 +36,7 @@ def FlightSection():
 
 def save_updated_flight_info():
     global flight_id, airline, source, destination, departure, arrival, capacity, seats, price, entryFlightId
+    global current_flight_id_key  # <-- ADD THIS LINE
 
     connect = sqlite3.connect("project_data.db")
     cursor = connect.cursor()
@@ -73,7 +74,7 @@ def save_updated_flight_info():
         field.delete(0, END)
 
     messagebox.showinfo("Success", "Flight data updated successfully!")
-
+    
 
 def updateflight2(f_id):
     global flight_id, airline, source, destination, departure, arrival, capacity, seats, price

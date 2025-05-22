@@ -33,17 +33,26 @@ elif Choice == 3:
 
 elif Choice == 4:
 
-        flight_id = input("Enter Flight ID: ")
-        airline = input("Enter Airline: ")
-        source = input("Enter Source: ")
-        destination = input("Enter Destination: ")
-        departure_time = input("Enter Departure Time (e.g. 14:30): ")
-        arrival_time = input("Enter Arrival Time (e.g. 18:45): ")
-        capacity = int(input("Enter Capacity: "))
-        available_seats = int(input("Enter Available Seats: "))
-        base_price = float(input("Enter Base Price: "))
+    conn = sqlite3.connect("project_data.db")
+    cursor = conn.cursor()
 
-        try:
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+
+    print("Tables in database:", tables)
+    conn.close()
+
+    flight_id = input("Enter Flight ID: ")
+    airline = input("Enter Airline: ")
+    source = input("Enter Source: ")
+    destination = input("Enter Destination: ")
+    departure_time = input("Enter Departure Time (e.g. 14:30): ")
+    arrival_time = input("Enter Arrival Time (e.g. 18:45): ")
+    capacity = int(input("Enter Capacity: "))
+    available_seats = int(input("Enter Available Seats: "))
+    base_price = float(input("Enter Base Price: "))
+
+    try:
             connection = sqlite3.connect("project_data.db")
             cursor = connection.cursor()
             cursor.execute("""
@@ -61,9 +70,9 @@ elif Choice == 4:
 
             connection.close()
             print("Flight added successfully!")
-        except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError:
             print("Error: Flight ID already exists.")
-        except Exception as e:
+    except Exception as e:
             print("An error occurred:", e)
 
 
