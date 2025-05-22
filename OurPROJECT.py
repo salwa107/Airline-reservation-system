@@ -2,6 +2,7 @@ import re
 import sqlite3
 from abc import ABC, abstractmethod
 import uuid
+from multipledispatch import dispatch
 
 # Database initialization
 def initialize_database():
@@ -124,7 +125,7 @@ class User(ABC):
         self.__email = email
         self.__password = password
         self.__contact_number = contact_number
-
+#=============property: allaw us to use methods as attributes========== 
     @property
     def username(self):
         return self.__username
@@ -140,15 +141,15 @@ class User(ABC):
     @property
     def contact_number(self):
         return self.__contact_number
-
+#==================valid e-mail check if the format is right================
     @classmethod
     def _validate_email(cls, email):
         return re.match(r"[^@]+@[^@]+\.[^@]+", email)
-
+#==================valid password check if the password less than 8 char================
     @classmethod
     def _validate_password(cls, password):
         return len(password) >= 8
-
+#============abstractmethods for over riding==============
     @abstractmethod
     def sign_up(self, cursor, connection):
         pass
@@ -177,7 +178,7 @@ class Passenger(User):
         self.passport_number = passport_number
         self.frequent_flyer_status = frequent_flyer_status or "None"
         self.loyalty_points = 0
-
+#=============get methods for data==============
     def get_table_name(self):
         return "Passenger"
 
@@ -197,7 +198,7 @@ class Passenger(User):
         if not self._validate_password(self.password):
             print("❌ Password must be at least 8 characters.")
             return False
-
+#================check if the user already in the data================= 
         try:
             cursor.execute("SELECT * FROM Passenger WHERE username = ? OR email = ?", 
                           (self.username, self.email))
@@ -226,6 +227,7 @@ class Passenger(User):
             return False
 
     def sign_in(self, cursor):
+    #check if the username and password match
         try:
             cursor.execute("SELECT password FROM Passenger WHERE username = ?", (self.username,))
             result = cursor.fetchone()
@@ -579,46 +581,19 @@ class Administrator(User):
 
     def monitor_flight_status(self, flight_id):
         print(f"Monitoring status of flight {flight_id}.")
-
+#===========overloading============
+    @dispatch()
     def generate_reports(self):
-        conn = get_connection()
-        cursor = conn.cursor()
-        
-        try:
-            # Flight report
-            print("\n📊 Flight Report:")
-            cursor.execute("""
-            SELECT flight_id, source, destination, 
-                   COUNT(booking_id) as bookings, 
-                   SUM(price) as revenue
-            FROM Booking B
-            JOIN Ticket T ON B.ticket_id = T.ticket_id
-            GROUP BY flight_id
-            """)
-            
-            flights = cursor.fetchall()
-            for flight in flights:
-                print(f"\nFlight {flight[0]}: {flight[1]} → {flight[2]}")
-                print(f"Bookings: {flight[3]} | Revenue: ${flight[4]:.2f}")
-                
-            # Passenger report
-            print("\n👥 Passenger Report:")
-            cursor.execute("""
-            SELECT P.username, COUNT(B.booking_id) as bookings
-            FROM Passenger P
-            LEFT JOIN Booking B ON P.username = B.passenger
-            GROUP BY P.username
-            ORDER BY bookings DESC
-            """)
-            
-            passengers = cursor.fetchall()
-            for passenger in passengers:
-                print(f"{passenger[0]}: {passenger[1]} bookings")
-                
-        except sqlite3.Error as e:
-            print(f"❌ Error generating reports: {e}")
-        finally:
-            conn.close()
+            print("Generating general reports...")
+
+    @dispatch(str)
+    def generate_reports(self, report_type):
+            print(f"Generating report of type: {report_type}")
+
+    @dispatch(str, int)
+    def generate_reports(self, report_type, year):
+            print(f"Generating {report_type} report for the year {year}")
+
 
 # CrewMember Class
 class CrewMember(User):
