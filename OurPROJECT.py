@@ -4,10 +4,56 @@ from abc import ABC, abstractmethod
 import uuid
 from multipledispatch import dispatch
 
-# Database initialization
+import threading
+
+class DatabaseConnection:
+    _instance = None
+    _lock = threading.Lock()  # For thread safety
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check in case another thread created it while we waited
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance.conn = sqlite3.connect('project_data.db')
+                    cls._instance.conn.row_factory = sqlite3.Row
+                    print("✅ Database connection established")
+        return cls._instance
+    
+    def get_connection(self):
+        return self.conn
+    
+    def close_connection(self):
+        if self.conn:
+            self.conn.close()
+            with self._lock:
+                DatabaseConnection._instance = None
+            print("🔌 Database connection closed")
+
 def initialize_database():
-    conn = sqlite3.connect('project_data.db')
+    db = DatabaseConnection()  # Get singleton instance
+    conn = db.get_connection()
     cursor = conn.cursor()
+    
+    try:
+        conn.commit()
+    except sqlite3.Error as e:
+        conn.rollback()
+        print(f"❌ Database error: {e}")
+    finally:
+        cursor.close()
+def get_users():
+    db = DatabaseConnection()
+    conn = db.get_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM users")
+            return cursor.fetchall()  
+    except sqlite3.Error as e:
+        print(f"❌ Database error: {e}")
+        return []
 
     # Create tables if they don't exist
     cursor.execute("""
