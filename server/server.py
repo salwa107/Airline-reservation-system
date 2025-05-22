@@ -1,62 +1,54 @@
 import socket
-import threading
-from ourproject import book_seat, list_reservations
+from OurPROJECT import book_seat, list_reservations
 
 HOST = 'localhost'
 PORT = 12345
 
 def handle_client(conn, addr):
-    print(f"[NEW CONNECTION] {addr} connected.")
-    conn.sendall(b"Welcome to the Airline Reservation Server!\n")
+    print(f"Connected by {addr}")
+    conn.sendall(b"Welcome to the Airline Booking Server!\n")
 
     while True:
-        try:
-            conn.sendall(b"\nCommands:\n1. BOOK <name> <seat>\n2. LIST\n3. QUIT\nEnter command: ")
-            data = conn.recv(1024).decode().strip()
-            if not data:
-                break
-
-            print(f"[{addr}] Command received: {data}")
-            parts = data.split()
-
-            if parts[0].upper() == 'BOOK' and len(parts) == 3:
-                name = parts[1]
-                seat = parts[2]
-                result = book_seat(name, seat)
-                conn.sendall(result.encode() + b"\n")
-
-            elif parts[0].upper() == 'LIST':
-                res_list = list_reservations()
-                if not res_list:
-                    conn.sendall(b"No reservations yet.\n")
-                else:
-                    for res in res_list:
-                        line = f"{res['name']} - Seat {res['seat']}\n"
-                        conn.sendall(line.encode())
-
-            elif parts[0].upper() == 'QUIT':
-                conn.sendall(b"Goodbye!\n")
-                break
-
-            else:
-                conn.sendall(b"Invalid command.\n")
-
-        except ConnectionResetError:
+        data = conn.recv(1024).decode().strip()
+        if not data:
             break
 
+        print(f"Received from {addr}: {data}")
+
+        if data.upper() == "QUIT":
+            conn.sendall(b"Goodbye!\n")
+            break
+
+        elif data.upper() == "LIST":
+            reservations = list_reservations()
+            if reservations:
+                response = "\n".join([f"{r['name']} -> Seat {r['seat']}" for r in reservations])
+            else:
+                response = "No reservations found."
+            conn.sendall(response.encode() + b"\n")
+
+        elif data.upper().startswith("BOOK"):
+            try:
+                _, name, seat = data.split()
+                result = book_seat(name, seat)
+                conn.sendall(result.encode() + b"\n")
+            except ValueError:
+                conn.sendall(b"Invalid BOOK format. Use: BOOK <name> <seat>\n")
+        else:
+            conn.sendall(b"Unknown command.\n")
+
     conn.close()
-    print(f"[DISCONNECTED] {addr} disconnected.")
+    print(f"Connection closed: {addr}")
 
 def start_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen()
-    print(f"[STARTED] Server running on {HOST}:{PORT}")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind((HOST, PORT))
+        server_socket.listen()
+        print(f"Server running on {HOST}:{PORT}...")
 
-    while True:
-        conn, addr = server.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
+        while True:
+            conn, addr = server_socket.accept()
+            handle_client(conn, addr)
 
 if __name__ == "__main__":
     start_server()
