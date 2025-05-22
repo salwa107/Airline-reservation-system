@@ -190,8 +190,6 @@ def newaccount(value):
 
     #else if for Administrator
     elif value == 2:
-        
-        #Label(signwindow, text = "this is 2").grid()
 
 
         connect = sqlite3.connect("project_data.db")
