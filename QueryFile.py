@@ -15,6 +15,7 @@ if Choice == 1:
 elif Choice == 2:
     conn = sqlite3.connect("project_data.db")
     cursor = conn.cursor()
+    cursor.execute("SELECT *, oid FROM Passenger")
     rows = cursor.fetchall()
 
     for row in rows:
